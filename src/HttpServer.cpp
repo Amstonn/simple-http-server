@@ -152,6 +152,7 @@ void HttpServer::execute_cgi(SOCKET client, const char * path, const char *metho
         cannot_execute(client);
         return;
     }
+    printf("Path:%s\n", path);
     //创建子线程用于执行cgi 父进程接受数据及发送子进程的回复数据
     if((pid = fork()) < 0){
         cannot_execute(client);
@@ -180,6 +181,7 @@ void HttpServer::execute_cgi(SOCKET client, const char * path, const char *metho
             putenv(length_env);
         }
         //替换执行path  使得当前进程执行指定的程序
+        printf("run cgi...\n");
         execl(path,path,NULL);
         exit(0);
     }else{ //父进程
@@ -189,11 +191,11 @@ void HttpServer::execute_cgi(SOCKET client, const char * path, const char *metho
         if(strcasecmp(method, "POST") == 0){
             for(i = 0;i<content_length;i++){
                 recv(client,&c,1,0);
-                write(cgi_output[0],&c,1);//父进程
+                write(cgi_input[1],&c,1);//父进程
             }
         }
         //获取子进程处理后的信息，然后send
-        while(read(cgi_input[1],&c,1) > 0 ){
+        while(read(cgi_output[0],&c,1) > 0 ){
             send(client,&c,1,0);
         }
         close(cgi_input[1]);
